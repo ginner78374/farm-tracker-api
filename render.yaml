@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: farm-tracker-api
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: DATABASE_URL
+        value: sqlite:///farm_tracker.db # Render will override this with PostgreSQL
+    autoDeploy: true

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Tracker Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { padding-top: 2rem; }
+        .card { margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">Farm Field Tracker</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Add New Field</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="fieldForm">
+                            <div class="mb-3">
+                                <label for="fieldName" class="form-label">Field Name</label>
+                                <input type="text" class="form-control" id="fieldName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fieldSize" class="form-label">Size (acres)</label>
+                                <input type="number" class="form-control" id="fieldSize" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fieldLocation" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="fieldLocation">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Field</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Add Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="activityForm">
+                            <div class="mb-3">
+                                <label for="fieldSelect" class="form-label">Select Field</label>
+                                <select class="form-control" id="fieldSelect" required></select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="activityType" class="form-label">Activity Type</label>
+                                <select class="form-control" id="activityType" required>
+                                    <option value="sprayed">Sprayed</option>
+                                    <option value="tilled">Tilled</option>
+                                    <option value="planted">Planted</option>
+                                    <option value="harvested">Harvested</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="activityDetails" class="form-label">Details</label>
+                                <textarea class="form-control" id="activityDetails" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Activity</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Fields and Activities</h5>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="loadFields()">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="fieldsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        async function loadFields() {
+            try {
+                const response = await fetch(`${API_URL}/fields`);
+                const fields = await response.json();
+                
+                const fieldSelect = document.getElementById('fieldSelect');
+                fieldSelect.innerHTML = '';
+                
+                const fieldsList = document.getElementById('fieldsList');
+                fieldsList.innerHTML = '';
+
+                for (const field of fields) {
+                    // Add to select dropdown
+                    const option = document.createElement('option');
+                    option.value = field.id;
+                    option.textContent = field.name;
+                    fieldSelect.appendChild(option);
+
+                    // Add to fields list
+                    const fieldCard = document.createElement('div');
+                    fieldCard.className = 'card mb-3';
+                    fieldCard.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${field.name}</h5>
+                            <p class="card-text">
+                                Size: ${field.size_acres} acres<br>
+                                Location: ${field.location || 'N/A'}
+                            </p>
+                            <div class="activities-${field.id}">
+                                <h6>Activities:</h6>
+                                <div class="list-group">Loading...</div>
+                            </div>
+                        </div>
+                    `;
+                    fieldsList.appendChild(fieldCard);
+
+                    // Load activities for this field
+                    loadFieldActivities(field.id);
+                }
+            } catch (error) {
+                console.error('Error loading fields:', error);
+            }
+        }
+
+        async function loadFieldActivities(fieldId) {
+            try {
+                const response = await fetch(`${API_URL}/fields/${fieldId}/activities`);
+                const activities = await response.json();
+                
+                const activitiesDiv = document.querySelector(`.activities-${fieldId} .list-group`);
+                activitiesDiv.innerHTML = activities.length ? '' : 'No activities recorded';
+
+                activities.forEach(activity => {
+                    const date = new Date(activity.date).toLocaleDateString();
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item';
+                    item.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${activity.activity_type}</h6>
+                            <small>${date}</small>
+                        </div>
+                        <p class="mb-1">${activity.details || 'No details provided'}</p>
+                        <small>By: ${activity.created_by}</small>
+                    `;
+                    activitiesDiv.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading activities:', error);
+            }
+        }
+
+        document.getElementById('fieldForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('fieldName').value,
+                size_acres: parseFloat(document.getElementById('fieldSize').value),
+                location: document.getElementById('fieldLocation').value
+            };
+
+            try {
+                await fetch(`${API_URL}/fields`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                document.getElementById('fieldForm').reset();
+                loadFields();
+            } catch (error) {
+                console.error('Error creating field:', error);
+            }
+        });
+
+        document.getElementById('activityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                field_id: parseInt(document.getElementById('fieldSelect').value),
+                activity_type: document.getElementById('activityType').value,
+                details: document.getElementById('activityDetails').value,
+                created_by: 'web-user'
+            };
+
+            try {
+                await fetch(`${API_URL}/activities`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                document.getElementById('activityForm').reset();
+                loadFields();
+            } catch (error) {
+                console.error('Error creating activity:', error);
+            }
+        });
+
+        // Initial load
+        loadFields();
+    </script>
+</body>
+</html>
