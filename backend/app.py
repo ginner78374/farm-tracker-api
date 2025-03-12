@@ -35,14 +35,15 @@ class FieldResource(Resource):
 
     def post(self):
         data = request.get_json()
+        size = data.get('size') or data.get('size_acres')  # Try both field names
         field = Field(
             name=data['name'],
-            size_acres=data.get('size'),
+            size_acres=float(size) if size is not None else None,  # Convert to float
             location=data.get('location')
         )
         db.session.add(field)
         db.session.commit()
-        return {'id': field.id, 'message': 'Field created successfully'}, 201
+        return field.to_dict(), 201  # Return the full field object
 
 class FieldActivityResource(Resource):
     def get(self, field_id=None):
