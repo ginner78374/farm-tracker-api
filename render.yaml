@@ -3,12 +3,10 @@ services:
     name: farm-tracker-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && gunicorn --bind=0.0.0.0:$PORT app:app
+    startCommand: cd backend && gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.11
+        value: 3.12.2
       - key: DATABASE_URL
-        value: postgresql://postgres:postgres@localhost:5432/farm_tracker
-      - key: FLASK_ENV
-        value: production
+        value: sqlite:///farm_tracker.db
     autoDeploy: true
