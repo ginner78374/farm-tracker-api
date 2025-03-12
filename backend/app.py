@@ -21,9 +21,8 @@ app.config['DEBUG'] = False
 # Initialize the database
 db.init_app(app)
 
-# Create tables before request handling
-@app.before_first_request
-def create_tables():
+# Create tables immediately within app context
+with app.app_context():
     db.create_all()
 
 class FieldResource(Resource):
