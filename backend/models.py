@@ -10,6 +10,11 @@ class Field(db.Model):
     location = db.Column(db.String(200))
     activities = db.relationship('FieldActivity', backref='field', lazy=True)
 
+    def __init__(self, name, size_acres=None, location=None):
+        self.name = name
+        self.size_acres = float(size_acres) if size_acres is not None else None
+        self.location = location
+
     def to_dict(self):
         return {
             'id': self.id,

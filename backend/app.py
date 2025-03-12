@@ -21,8 +21,9 @@ app.config['DEBUG'] = False
 # Initialize the database
 db.init_app(app)
 
-# Create tables immediately within app context
+# Drop and recreate tables to handle schema changes
 with app.app_context():
+    db.drop_all()
     db.create_all()
 
 class FieldResource(Resource):
