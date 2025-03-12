@@ -45,28 +45,43 @@ class FieldResource(Resource):
         return [f.to_dict() for f in fields]
 
     def post(self):
-        data = request.get_json()
-        app.logger.info(f"Received field data: {data}")  # Log received data
-        
-        size = data.get('size') or data.get('size_acres')
-        app.logger.info(f"Parsed size value: {size}")  # Log size value
-        
-        field = Field(
-            name=data['name'],
-            size_acres=float(size) if size is not None else None,
-            location=data.get('location')
-        )
-        
-        app.logger.info(f"Created field object: {field.to_dict()}")  # Log field object
-        
-        db.session.add(field)
-        db.session.commit()
-        
-        # Verify field after commit
-        saved_field = Field.query.get(field.id)
-        app.logger.info(f"Saved field: {saved_field.to_dict()}")  # Log saved field
-        
-        return field.to_dict(), 201
+        try:
+            data = request.get_json()
+            app.logger.info(f"Received field data: {data}")
+            
+            # Get size from either 'size' or 'size_acres' field
+            size = data.get('size')
+            if size is None:
+                size = data.get('size_acres')
+            
+            app.logger.info(f"Size value before conversion: {size}")
+            
+            # Create field with explicit size_acres value
+            field = Field(
+                name=data['name'],
+                size_acres=float(size) if size is not None else None,
+                location=data.get('location')
+            )
+            
+            # Log field before saving
+            app.logger.info(f"Field before save: name={field.name}, size_acres={field.size_acres}")
+            
+            # Save to database
+            db.session.add(field)
+            db.session.commit()
+            
+            # Refresh the field object
+            db.session.refresh(field)
+            
+            # Log field after saving
+            app.logger.info(f"Field after save: name={field.name}, size_acres={field.size_acres}")
+            
+            return field.to_dict(), 201
+            
+        except Exception as e:
+            app.logger.error(f"Error creating field: {str(e)}")
+            db.session.rollback()
+            return {'message': f'Error creating field: {str(e)}'}, 500
 
 class FieldActivityResource(Resource):
     def get(self, field_id=None):
