@@ -4,6 +4,11 @@ from flask_cors import CORS
 from flask_restful import Api, Resource
 from models import db, Field, FieldActivity
 from datetime import datetime
+import logging
+
+# Set up logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 app = Flask(__name__, static_url_path='')
 CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all API routes
@@ -14,16 +19,21 @@ database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localho
 if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
+# Add query logging to database URL
+if '?' in database_url:
+    database_url += '&echo=true'
+else:
+    database_url += '?echo=true'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['DEBUG'] = False
+app.config['DEBUG'] = True  # Enable debug mode to see more info
 
 # Initialize the database
 db.init_app(app)
 
-# Drop and recreate tables to handle schema changes
+# Create tables within app context
 with app.app_context():
-    db.drop_all()
     db.create_all()
 
 class FieldResource(Resource):
@@ -36,15 +46,27 @@ class FieldResource(Resource):
 
     def post(self):
         data = request.get_json()
-        size = data.get('size') or data.get('size_acres')  # Try both field names
+        app.logger.info(f"Received field data: {data}")  # Log received data
+        
+        size = data.get('size') or data.get('size_acres')
+        app.logger.info(f"Parsed size value: {size}")  # Log size value
+        
         field = Field(
             name=data['name'],
-            size_acres=float(size) if size is not None else None,  # Convert to float
+            size_acres=float(size) if size is not None else None,
             location=data.get('location')
         )
+        
+        app.logger.info(f"Created field object: {field.to_dict()}")  # Log field object
+        
         db.session.add(field)
         db.session.commit()
-        return field.to_dict(), 201  # Return the full field object
+        
+        # Verify field after commit
+        saved_field = Field.query.get(field.id)
+        app.logger.info(f"Saved field: {saved_field.to_dict()}")  # Log saved field
+        
+        return field.to_dict(), 201
 
 class FieldActivityResource(Resource):
     def get(self, field_id=None):
