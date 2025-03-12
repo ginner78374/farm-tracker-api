@@ -10,6 +10,14 @@ class Field(db.Model):
     location = db.Column(db.String(200))
     activities = db.relationship('FieldActivity', backref='field', lazy=True)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'size_acres': self.size_acres,
+            'location': self.location
+        }
+
 class FieldActivity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     field_id = db.Column(db.Integer, db.ForeignKey('field.id'), nullable=False)

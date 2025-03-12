@@ -29,25 +29,15 @@ class FieldResource(Resource):
     def get(self, field_id=None):
         if field_id:
             field = Field.query.get_or_404(field_id)
-            return {
-                'id': field.id,
-                'name': field.name,
-                'size_acres': field.size_acres,
-                'location': field.location
-            }
+            return field.to_dict()
         fields = Field.query.all()
-        return [{
-            'id': f.id,
-            'name': f.name,
-            'size_acres': f.size_acres,
-            'location': f.location
-        } for f in fields]
+        return [f.to_dict() for f in fields]
 
     def post(self):
         data = request.get_json()
         field = Field(
             name=data['name'],
-            size_acres=data.get('size_acres'),
+            size_acres=data.get('size'),
             location=data.get('location')
         )
         db.session.add(field)
