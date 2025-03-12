@@ -10,9 +10,8 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all API ro
 api = Api(app)
 
 # Configure SQLAlchemy for both local and production
-database_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'farm_tracker.db')
-database_url = os.getenv('DATABASE_URL', f'sqlite:///{database_path}')
-if database_url and database_url.startswith('postgres://'):
+database_url = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/farm_tracker')
+if database_url.startswith('postgres://'):
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
