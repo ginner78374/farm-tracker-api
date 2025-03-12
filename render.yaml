@@ -2,13 +2,11 @@ services:
   - type: web
     name: farm-tracker-api
     env: python
-    buildCommand: pip install -r requirements.txt --no-cache-dir
-    startCommand: cd backend && gunicorn -c gunicorn.conf.py app:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.2
       - key: DATABASE_URL
-        value: sqlite:///farm_tracker.db # Render will override this with PostgreSQL
-      - key: FLASK_ENV
-        value: production
+        value: sqlite:///farm_tracker.db
     autoDeploy: true
