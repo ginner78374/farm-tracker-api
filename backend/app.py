@@ -16,9 +16,15 @@ if database_url and database_url.startswith('postgres://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['DEBUG'] = False
 
 # Initialize the database
 db.init_app(app)
+
+# Create tables before request handling
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
 class FieldResource(Resource):
     def get(self, field_id=None):
@@ -78,10 +84,6 @@ api.add_resource(FieldActivityResource, '/api/activities', '/api/fields/<int:fie
 def index():
     return send_from_directory('static', 'index.html')
 
-# Create tables in production
-with app.app_context():
-    db.create_all()
-
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
