@@ -16,21 +16,6 @@ if database_url and database_url.startswith('postgres://'):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
-app.config['DEBUG'] = False
-
-# Configure logging
-import logging
-from logging.handlers import RotatingFileHandler
-if not app.debug:
-    file_handler = RotatingFileHandler('farm_tracker.log', maxBytes=10240, backupCount=10)
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
-    app.logger.setLevel(logging.INFO)
-    app.logger.info('Farm Tracker startup')
 
 # Initialize the database
 db.init_app(app)
